@@ -1,0 +1,50 @@
+GAS LISTING bootsect.s 			page 1
+
+
+   1              	# Skelix by Xiaoming Mo (xiaoming.mo@skelix.org)
+   2              	# Licence: GPLv2
+   3              			.text
+   4              			.globl	start
+   5              			.code16
+   6              	start:
+   7 0000 EA130000 			jmp	$0x0,	$code
+   7      00
+   8              	msg:
+   9 0005 48656C6C 			.string	"Hello World!\x0"
+   9      6F20576F 
+   9      726C6421 
+   9      0000
+  10              	code:
+  11 0013 B800B8   			movw	$0xb800,%ax
+  12 0016 8EC0     			movw	%ax,	%es
+  13 0018 31C0     			xorw	%ax,	%ax
+  14 001a 8ED8     			movw	%ax,	%ds
+  15              	
+  16 001c BE0500   			movw	$msg,	%si
+  17 001f 31FF     			xorw	%di,	%di
+  18              			
+  19 0021 FC       			cld
+  20 0022 B007     			movb	$0x07,	%al
+  21              	1:
+  22 0024 833C00   			cmp	$0,	(%si)
+  23 0027 7404     			je	1f	
+  24 0029 A4       			movsb
+  25 002a AA       			stosb
+  26 002b EBF7     			jmp	1b
+  27 002d EBFE     	1:		jmp	1b
+  28 002f 90909090 	.org	0x1fe, 0x90
+  28      90909090 
+  28      90909090 
+  28      90909090 
+  28      90909090 
+  29 01fe 55AA     	.word	0xaa55
+  30              	
+GAS LISTING bootsect.s 			page 2
+
+
+DEFINED SYMBOLS
+          bootsect.s:6      .text:0000000000000000 start
+          bootsect.s:10     .text:0000000000000013 code
+          bootsect.s:8      .text:0000000000000005 msg
+
+NO UNDEFINED SYMBOLS

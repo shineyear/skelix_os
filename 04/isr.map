@@ -1,0 +1,339 @@
+GAS LISTING isr.s 			page 1
+
+
+   1              	# Skelix by Xiaoming Mo (xiaoming.mo@skelix.org)
+   2              	# Licence: GPLv2
+   3              			.text
+   4              			.include "kernel.inc"
+   1              	# Skelix by Xiaoming Mo (xiaoming.mo@skelix.org)
+   2              	# Licence: GPLv2
+   3              	.set CODE_SEL, 0x08	# code segment selector in kernel mode 
+   4              	.set DATA_SEL, 0x10 # data segment selector in kernel mode
+   5              	.set IDT_ADDR, 0x80000	# IDT start address
+   6              	.set IDT_SIZE, (256*8)	# IDT has fixed length
+   7              	.set GDT_ADDR, (IDT_ADDR+IDT_SIZE)
+   8              				# GDT starts after IDT
+   9              	.set GDT_ENTRIES, 5	# GDT has 5 descriptors
+  10              				# null descriptor
+  11              				# cs segment descriptor for kernel
+  12              				# ds segment descriptor for kernel
+  13              				# current process tss
+  14              				# current process ldt
+  15              	.set GDT_SIZE, (8*GDT_ENTRIES)
+  16              				# GDT length
+  17              	.set KERNEL_SECT, 72	# Kernel lenght, counted by sectors
+  18              	.set STACK_BOT, 0xa0000	# stack starts at 640K
+  19              	
+   5              			.globl	default_isr, isr 
+   6              			
+   7              			.macro	isrnoerror		nr
+   8              			isr\nr:
+   9              			pushl	$0
+  10              			pushl	$\nr
+  11              			jmp		isr_comm
+  12              			.endm
+  13              	
+  14              			.macro	isrerror		nr
+  15              			isr\nr:
+  16              			pushl	$\nr
+  17              			jmp		isr_comm
+  18              			.endm
+  19              			
+  20 0000 00000000 	isr:	.long	divide_error, isr0x00, debug_exception, isr0x01
+  20      2D010000 
+  20      00000000 
+  20      33010000 
+  21 0010 00000000 			.long	breakpoint, isr0x02, nmi, isr0x03
+  21      39010000 
+  21      00000000 
+  21      3F010000 
+  22 0020 00000000 			.long	overflow, isr0x04, bounds_check, isr0x05
+  22      45010000 
+  22      00000000 
+  22      4B010000 
+  23 0030 00000000 			.long	invalid_opcode, isr0x06, cop_not_avalid, isr0x07
+  23      51010000 
+  23      00000000 
+  23      57010000 
+  24 0040 00000000 			.long	double_fault, isr0x08, overrun, isr0x09
+  24      5D010000 
+  24      00000000 
+GAS LISTING isr.s 			page 2
+
+
+  24      61010000 
+  25 0050 00000000 			.long	invalid_tss, isr0x0a, seg_not_present, isr0x0b
+  25      67010000 
+  25      00000000 
+  25      6B010000 
+  26 0060 00000000 			.long	stack_exception, isr0x0c, general_protection, isr0x0d
+  26      6F010000 
+  26      00000000 
+  26      73010000 
+  27 0070 00000000 			.long	page_fault, isr0x0e, reversed, isr0x0f
+  27      77010000 
+  27      00000000 
+  27      7B010000 
+  28 0080 00000000 			.long	coprocessor_error, isr0x10, reversed, isr0x11
+  28      84010000 
+  28      00000000 
+  28      8B010000 
+  29 0090 00000000 			.long	reversed, isr0x12, reversed, isr0x13
+  29      94010000 
+  29      00000000 
+  29      9D010000 
+  30 00a0 00000000 			.long	reversed, isr0x14, reversed, isr0x15
+  30      A6010000 
+  30      00000000 
+  30      AF010000 
+  31 00b0 00000000 			.long	reversed, isr0x16, reversed, isr0x17
+  31      B8010000 
+  31      00000000 
+  31      C1010000 
+  32 00c0 00000000 			.long	reversed, isr0x18, reversed, isr0x19
+  32      CA010000 
+  32      00000000 
+  32      D3010000 
+  33 00d0 00000000 			.long	reversed, isr0x1a, reversed, isr0x1b
+  33      DC010000 
+  33      00000000 
+  33      E5010000 
+  34 00e0 00000000 			.long	reversed, isr0x1c, reversed, isr0x1d
+  34      EE010000 
+  34      00000000 
+  34      F7010000 
+  35 00f0 00000000 			.long	reversed, isr0x1e, reversed, isr0x1f
+  35      00020000 
+  35      00000000 
+  35      09020000 
+  36              	#		.long	do_timer, isr0x20, do_kb, isr0x21
+  37              	/*
+  38              			+-----------+
+  39              			|  old  ss  |	76
+  40              			+-----------+
+  41              			|  old esp  |	72
+  42              			+-----------+
+  43              			|  eflags   |	68
+  44              			+-----------+
+  45              			|    cs     |	64
+  46              			+-----------+
+  47              			|   eip     |	60
+GAS LISTING isr.s 			page 3
+
+
+  48              			+-----------+
+  49              			|  0/err    |	56
+  50              			+-----------+
+  51              			|  isr_nr   | tmp = esp
+  52              			+-----------+
+  53              			|   eax     |	48
+  54              			+-----------+
+  55              			|   ecx     |	44
+  56              			+-----------+
+  57              			|   edx     |	40
+  58              			+-----------+
+  59              			|   ebx     |	36
+  60              			+-----------+
+  61              			|   tmp     |	32
+  62              			+-----------+
+  63              			|   ebp     |	28
+  64              			+-----------+
+  65              			|   esi     |	24
+  66              			+-----------+
+  67              			|   edi     |	20
+  68              			+-----------+
+  69              			|    ds     |	16
+  70              			+-----------+
+  71              			|    es     |	12
+  72              			+-----------+
+  73              			|    fs     |	8
+  74              			+-----------+
+  75              			|    gs     |	4
+  76              			+-----------+
+  77              			|    ss     |	0
+  78              			+-----------+
+  79              	*/
+  80              	isr_comm:
+  81 0100 60       			pushal
+  82 0101 1E       			pushl	%ds
+  83 0102 06       			pushl	%es
+  84 0103 0FA0     			pushl	%fs
+  85 0105 0FA8     			pushl	%gs
+  86 0107 16       			pushl	%ss
+  87 0108 66B81000 			movw	$DATA_SEL,%ax
+  88 010c 8ED8     			movw	%ax,	%ds
+  89 010e 8EC0     			movw	%ax,	%es
+  90 0110 8EE0     			movw	%ax,	%fs
+  91 0112 8EE8     			movw	%ax,	%gs
+  92 0114 8B4C2434 			movl	52(%esp),%ecx
+  93 0118 FF14CD00 			call	*isr(, %ecx, 8)
+  93      000000
+  94 011f 83C404   			addl	$4,		%esp	# for %ss
+  95 0122 0FA9     			popl	%gs
+  96 0124 0FA1     			popl	%fs
+  97 0126 07       			popl	%es
+  98 0127 1F       			popl	%ds
+  99 0128 61       			popal
+ 100 0129 83C408   			addl	$8,		%esp	# for isr_nr and err_code
+ 101 012c CF       			iret
+ 102              	
+ 103 012d 6A006A00 			isrNoError		0x00
+GAS LISTING isr.s 			page 4
+
+
+ 103      EBCD
+ 104 0133 6A006A01 			isrNoError		0x01
+ 104      EBC7
+ 105 0139 6A006A02 			isrNoError		0x02
+ 105      EBC1
+ 106 013f 6A006A03 			isrNoError		0x03
+ 106      EBBB
+ 107 0145 6A006A04 			isrNoError		0x04
+ 107      EBB5
+ 108 014b 6A006A05 			isrNoError		0x05
+ 108      EBAF
+ 109 0151 6A006A06 			isrNoError		0x06
+ 109      EBA9
+ 110 0157 6A006A07 			isrNoError		0x07
+ 110      EBA3
+ 111 015d 6A08EB9F 			isrError		0x08
+ 112 0161 6A006A09 			isrNoError		0x09
+ 112      EB99
+ 113 0167 6A0AEB95 			isrError		0x0a
+ 114 016b 6A0BEB91 			isrError		0x0b
+ 115 016f 6A0CEB8D 			isrError		0x0c
+ 116 0173 6A0DEB89 			isrError		0x0d
+ 117 0177 6A0EEB85 			isrError		0x0e
+ 118 017b 6A006A0F 			isrNoError		0x0f
+ 118      E97CFFFF 
+ 118      FF
+ 119 0184 6A10E975 			isrError		0x10
+ 119      FFFFFF
+ 120 018b 6A006A11 			isrNoError		0x11
+ 120      E96CFFFF 
+ 120      FF
+ 121 0194 6A006A12 			isrNoError		0x12
+ 121      E963FFFF 
+ 121      FF
+ 122 019d 6A006A13 			isrNoError		0x13
+ 122      E95AFFFF 
+ 122      FF
+ 123 01a6 6A006A14 			isrNoError		0x14
+ 123      E951FFFF 
+ 123      FF
+ 124 01af 6A006A15 			isrNoError		0x15
+ 124      E948FFFF 
+ 124      FF
+ 125 01b8 6A006A16 			isrNoError		0x16
+ 125      E93FFFFF 
+ 125      FF
+ 126 01c1 6A006A17 			isrNoError		0x17
+ 126      E936FFFF 
+ 126      FF
+ 127 01ca 6A006A18 			isrNoError		0x18
+ 127      E92DFFFF 
+ 127      FF
+ 128 01d3 6A006A19 			isrNoError		0x19
+ 128      E924FFFF 
+ 128      FF
+ 129 01dc 6A006A1A 			isrNoError		0x1a
+ 129      E91BFFFF 
+GAS LISTING isr.s 			page 5
+
+
+ 129      FF
+ 130 01e5 6A006A1B 			isrNoError		0x1b
+ 130      E912FFFF 
+ 130      FF
+ 131 01ee 6A006A1C 			isrNoError		0x1c
+ 131      E909FFFF 
+ 131      FF
+ 132 01f7 6A006A1D 			isrNoError		0x1d
+ 132      E900FFFF 
+ 132      FF
+ 133 0200 6A006A1E 			isrNoError		0x1e
+ 133      E9F7FEFF 
+ 133      FF
+ 134 0209 6A006A1F 			isrNoError		0x1f
+ 134      E9EEFEFF 
+ 134      FF
+ 135              	default_isr:
+ 136 0212 FE050080 			incb	0xb8000
+ 136      0B00
+ 137 0218 C6050180 			movb	$2,		0xb8001
+ 137      0B0002
+ 138 021f B020     			movb	$0x20,	%al
+ 139 0221 E620     			outb	%al,	$0x20
+ 140 0223 E6A0     			outb	%al,	$0xa0
+ 141 0225 CF       			iret
+ 142              	
+GAS LISTING isr.s 			page 6
+
+
+DEFINED SYMBOLS
+  include/kernel.inc:3      *ABS*:0000000000000008 CODE_SEL
+  include/kernel.inc:4      *ABS*:0000000000000010 DATA_SEL
+  include/kernel.inc:5      *ABS*:0000000000080000 IDT_ADDR
+  include/kernel.inc:6      *ABS*:0000000000000800 IDT_SIZE
+  include/kernel.inc:7      *ABS*:0000000000080800 GDT_ADDR
+  include/kernel.inc:9      *ABS*:0000000000000005 GDT_ENTRIES
+  include/kernel.inc:15     *ABS*:0000000000000028 GDT_SIZE
+  include/kernel.inc:17     *ABS*:0000000000000048 KERNEL_SECT
+  include/kernel.inc:18     *ABS*:00000000000a0000 STACK_BOT
+               isr.s:135    .text:0000000000000212 default_isr
+               isr.s:20     .text:0000000000000000 isr
+               isr.s:103    .text:000000000000012d isr0x00
+               isr.s:104    .text:0000000000000133 isr0x01
+               isr.s:105    .text:0000000000000139 isr0x02
+               isr.s:106    .text:000000000000013f isr0x03
+               isr.s:107    .text:0000000000000145 isr0x04
+               isr.s:108    .text:000000000000014b isr0x05
+               isr.s:109    .text:0000000000000151 isr0x06
+               isr.s:110    .text:0000000000000157 isr0x07
+               isr.s:111    .text:000000000000015d isr0x08
+               isr.s:112    .text:0000000000000161 isr0x09
+               isr.s:113    .text:0000000000000167 isr0x0a
+               isr.s:114    .text:000000000000016b isr0x0b
+               isr.s:115    .text:000000000000016f isr0x0c
+               isr.s:116    .text:0000000000000173 isr0x0d
+               isr.s:117    .text:0000000000000177 isr0x0e
+               isr.s:118    .text:000000000000017b isr0x0f
+               isr.s:119    .text:0000000000000184 isr0x10
+               isr.s:120    .text:000000000000018b isr0x11
+               isr.s:121    .text:0000000000000194 isr0x12
+               isr.s:122    .text:000000000000019d isr0x13
+               isr.s:123    .text:00000000000001a6 isr0x14
+               isr.s:124    .text:00000000000001af isr0x15
+               isr.s:125    .text:00000000000001b8 isr0x16
+               isr.s:126    .text:00000000000001c1 isr0x17
+               isr.s:127    .text:00000000000001ca isr0x18
+               isr.s:128    .text:00000000000001d3 isr0x19
+               isr.s:129    .text:00000000000001dc isr0x1a
+               isr.s:130    .text:00000000000001e5 isr0x1b
+               isr.s:131    .text:00000000000001ee isr0x1c
+               isr.s:132    .text:00000000000001f7 isr0x1d
+               isr.s:133    .text:0000000000000200 isr0x1e
+               isr.s:134    .text:0000000000000209 isr0x1f
+               isr.s:80     .text:0000000000000100 isr_comm
+
+UNDEFINED SYMBOLS
+divide_error
+debug_exception
+breakpoint
+nmi
+overflow
+bounds_check
+invalid_opcode
+cop_not_avalid
+double_fault
+overrun
+GAS LISTING isr.s 			page 7
+
+
+invalid_tss
+seg_not_present
+stack_exception
+general_protection
+page_fault
+reversed
+coprocessor_error

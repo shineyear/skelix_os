@@ -1,0 +1,85 @@
+GAS LISTING load.s 			page 1
+
+
+   1              	# Skelix by Xiaoming Mo (xiaoming.mo@skelix.org)
+   2              	# Licence: GPLv2
+   3              			.text
+   4              			.globl	pm_mode
+   5              			.include "kernel.inc"
+   1              	.set CODE_SEL, 0x08	# code segment selector in kernel mode 
+   2              	.set DATA_SEL, 0x10 # data segment selector in kernel mode
+   3              	.set IDT_ADDR, 0x80000	# IDT start address
+   4              	.set IDT_SIZE, (256*8)	# IDT has fixed length
+   5              	.set GDT_ADDR, (IDT_ADDR+IDT_SIZE)
+   6              				# GDT starts after IDT
+   7              	.set GDT_ENTRIES, 5	# GDT has 5 descriptors
+   8              				# null descriptor
+   9              				# cs segment descriptor for kernel
+  10              				# ds segment descriptor for kernel
+  11              				# current process tss
+  12              				# current process ldt
+  13              	.set GDT_SIZE, (8*GDT_ENTRIES)
+  14              				# GDT length
+  15              	.set KERNEL_SECT, 72	# Kernel lenght, counted by sectors
+  16              	.set STACK_BOT, 0xa0000	# stack starts at 640K
+  17              	
+   6              			.org 0
+   7              	pm_mode:
+   8 0000 B8100000 			movl	$DATA_SEL,%eax
+   8      00
+   9 0005 8ED8     			movw	%ax,	%ds
+  10 0007 8EC0     			movw	%ax,	%es
+  11 0009 8EE0     			movw	%ax,	%fs
+  12 000b 8EE8     			movw	%ax,	%gs
+  13 000d 8ED0     			movw	%ax,	%ss
+  14 000f BC00000A 			movl	$STACK_BOT,%esp
+  14      00
+  15              	
+  16 0014 FC       			cld
+  17 0015 BE000201 			movl	$0x10200,%esi
+  17      00
+  18 001a BF000200 			movl	$0x200,	%edi
+  18      00
+  19 001f B9802300 			movl	$(KERNEL_SECT-1)<<7,%ecx
+  19      00
+  20 0024 F3       			rep
+  21 0025 A5       			movsl
+  22              	
+  23 0026 B007     	                movb    $0x07,  %al
+  24 0028 BE3D0000 			movl	$msg,	%esi
+  24      00
+  25 002d BF00800B 			movl	$0xb8000,%edi
+  25      00
+  26              	1:
+  27 0032 833E00   	                cmp     $0,     (%esi)
+  28 0035 7404     	                je      1f
+  29 0037 A4       	                movsb
+  30 0038 AA       	                stosb
+  31 0039 EBF7     	                jmp     1b
+  32 003b EBFE     	1:              jmp     1b
+  33              	msg:
+GAS LISTING load.s 			page 2
+
+
+  34 003d 48656C6C 	                .string "Hello World!\x0"
+  34      6F20576F 
+  34      726C6421 
+  34      0000
+  35              	
+GAS LISTING load.s 			page 3
+
+
+DEFINED SYMBOLS
+              load.s:7      .text:0000000000000000 pm_mode
+  include/kernel.inc:1      *ABS*:0000000000000008 CODE_SEL
+  include/kernel.inc:2      *ABS*:0000000000000010 DATA_SEL
+  include/kernel.inc:3      *ABS*:0000000000080000 IDT_ADDR
+  include/kernel.inc:4      *ABS*:0000000000000800 IDT_SIZE
+  include/kernel.inc:5      *ABS*:0000000000080800 GDT_ADDR
+  include/kernel.inc:7      *ABS*:0000000000000005 GDT_ENTRIES
+  include/kernel.inc:13     *ABS*:0000000000000028 GDT_SIZE
+  include/kernel.inc:15     *ABS*:0000000000000048 KERNEL_SECT
+  include/kernel.inc:16     *ABS*:00000000000a0000 STACK_BOT
+              load.s:33     .text:000000000000003d msg
+
+NO UNDEFINED SYMBOLS

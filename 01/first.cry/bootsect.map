@@ -1,0 +1,24 @@
+GAS LISTING bootsect.s 			page 1
+
+
+   1              	# Skelix by Xiaoming Mo (xiaoming.mo@skelix.org)
+   2              	# Licence: GPLv2
+   3              			.text
+   4              			.globl	start
+   5              			.code16
+   6              	start:
+   7 0000 E9FEFF   			jmp	start	
+   8 0003 90909090 	.org	0x1fe, 0x90
+   8      90909090 
+   8      90909090 
+   8      90909090 
+   8      90909090 
+   9 01fe 55AA     	.word	0xaa55
+  10              	
+GAS LISTING bootsect.s 			page 2
+
+
+DEFINED SYMBOLS
+          bootsect.s:6      .text:0000000000000000 start
+
+NO UNDEFINED SYMBOLS
